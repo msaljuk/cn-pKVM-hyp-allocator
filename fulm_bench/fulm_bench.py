@@ -9,11 +9,13 @@ import numpy as np
 import statistics
 import re
 
-# Usage: (from top-level dir) ./fulm_bench/fulm_bench.py --csv=<your-csv-name>.csv --max_n_alloc_exp=8
+# Usage: (from top-level dir) ./fulm_bench/fulm_bench.py --csv=<your-csv-name>.csv --max_n_alloc_exp=8 --runtime=C
 parser=argparse.ArgumentParser()
 parser.add_argument("--csv", help="Store all results in csv file with provided name")
 parser.add_argument("--max_n_alloc_exp", help="Maximum i to iterate to, where the number of allocations is 2**i")
+parser.add_argument("--runtime", help="Choose language runtime environment for Fulminate")
 parser.set_defaults(max_n_alloc_exp=5)
+parser.set_defaults(runtime="C")
 
 args=parser.parse_args()
 
@@ -23,6 +25,8 @@ runtime_prefix = opam_switch_prefix + "/lib/cn/runtime"
 gtime = 'gtime -f ~%e~%M '
 
 cc = "clang"
+
+should_use_lua = args.runtime == "Lua"
 
 def run_cmd(cmd):
     print(cmd)
@@ -52,14 +56,16 @@ def preprocess(filename):
 
 def fulminate(filename):
     fulm = "cn instrument --exec-c-locs-mode --insert-curly-braces --without-loop-invariants --without-lemma-checks "
+    if should_use_lua:
+        fulm += "--experimental-lua-runtime "
     run_cmd(fulm + filename)
 
 def compile(filename):
-    compile = cc + " -g -c -std=gnu11 -I" + runtime_prefix + "/include -Isrc -Iinclude -Wno-builtin-macro-redefined -Wno-unused-value -D__cerb__ -DSTANDALONE -DNO_STATEMENT_EXPRS -include fulminate2.h "
+    compile = cc + " -g -c -std=gnu11 -I" + runtime_prefix + "/include -Isrc -Iinclude -Wno-builtin-macro-redefined -Wno-unused-value -D__cerb__ -DSTANDALONE -DNO_STATEMENT_EXPRS -include fulminate2.h -o ./main.pp.bench.exec.o "
     run_cmd(compile + filename)
 
 def link(filename, instrumented):
-    link = cc + " " + filename + " /Users/rinibanerjee/.opam/default/lib/cn/runtime/libcn_exec.a -L " + runtime_prefix + " -lcn_exec -o main" + (".instrumented" if instrumented else "") + ".exe"
+    link = cc + " " + filename + " " + runtime_prefix + "/libcn_exec.a -L " + runtime_prefix + " -lcn_exec " + ("-lcn_lua -lm " if should_use_lua else "") + "-o main" + (".instrumented" if instrumented else "") + ".exe"
     run_cmd(link)
 
 def run(instrumented, time=False):
