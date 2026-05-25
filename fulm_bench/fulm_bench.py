@@ -9,7 +9,7 @@ import numpy as np
 import statistics
 import re
 
-# Usage: (from top-level dir) ./fulm_bench/fulm_bench.py --csv=<your-csv-name>.csv --max_n_alloc_exp=8 --runtime=C
+# Usage: (from top-level dir) ./fulm_bench/fulm_bench.py --csv=<your-csv-name>.csv --max_n_alloc_exp=8 --runtime="Lua"
 parser=argparse.ArgumentParser()
 parser.add_argument("--csv", help="Store all results in csv file with provided name")
 parser.add_argument("--max_n_alloc_exp", help="Maximum i to iterate to, where the number of allocations is 2**i")
